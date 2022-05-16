@@ -7,7 +7,6 @@ local ws = {} do
     local wait    = wait;
     local wrap    = coroutine.wrap;
     local connect = syn and syn.websocket.connect or WebSocket.connect;
-    local closed;
     
     -- Turns request into JSON format (string&table support only since numbers arent allowed in requests anyway)
     local function FormatPacket(packet) 
@@ -18,10 +17,14 @@ local ws = {} do
         return "{" .. sub(concat(serialzed), 0, -2) .. "}";
     end;
 
-    -- Automatic reconnection/hearbeat (not using onclose since it can fuck up sometimes)
-    local function HeartbeartHandler(self) 
+    -- Main websocket hander includes reconnection/hearbeat
+    local function WebsocketHandler(self)
+        local function MessageHandler(...) 
+            return self.OnMessageSignal:Fire(...);
+        end;
+
         local function ClosedHandler() 
-            if closed then return end;
+            if self.SocketClosed then return end;
             self.__OBJECT_ACTIVE = false;
 
             while wait(5) do
@@ -30,13 +33,17 @@ local ws = {} do
                     self.__OBJECT_ACTIVE = true;
                     self.Websocket = ws;
                     ws:Send(FormatPacket({ Opcode = "PING", Data = {} }));
-                    ws.OnClose:Connect(ClosedHandler); -- reconnect handler
+
+                    -- Reconnect events
+                    ws.OnClose:Connect(ClosedHandler);
+                    ws.OnMessage:Connect(MessageHandler);
                     break;
                 end;
             end;
         end;
 
         self.Websocket.OnClose:Connect(ClosedHandler);
+        self.Websocket.OnMessage:Connect(MessageHandler);
 
         while wait(10) do
             if self.__OBJECT_ACTIVE then
@@ -56,9 +63,11 @@ local ws = {} do
 
         self.Websocket = ws;
         self.Url = url;
+        self.OnMessageSignal = Instance.new("BindableEvent");
+        self.OnMessage = self.OnMessageSignal.Event;
         self.__OBJECT_ACTIVE = true;
-        wrap(HeartbeartHandler)(self);
 
+        wrap(WebsocketHandler)(self);
         return object;
     end;
 
@@ -75,12 +84,16 @@ local ws = {} do
     end;
 
     function ws:close() 
-        closed = true;
+        self.SocketClosed = true;
         self.Websocket:Close();
     end;
 end;
 
 local http = ws:new("ws://localhost:8080");
+http.OnMessage:Connect(function(...)
+    print("msg", ...);
+end);
+
 local response = http:request({
     Url = "ws://localhost:8080/api/info"
 });
