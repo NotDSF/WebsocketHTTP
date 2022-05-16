@@ -19,8 +19,12 @@ local ws = {} do
 
     -- Main websocket hander includes reconnection/hearbeat
     local function WebsocketHandler(self)
-        local function MessageHandler(...) 
-            return self.OnMessageSignal:Fire(...);
+        local function MessageHandler(msg)
+            if msg == "PONG" then
+                self.LastPong = tick();
+                return; -- dont send message event
+            end;
+            return self.OnMessageSignal:Fire(msg);
         end;
 
         local function ClosedHandler() 
@@ -44,10 +48,15 @@ local ws = {} do
 
         self.Websocket.OnClose:Connect(ClosedHandler);
         self.Websocket.OnMessage:Connect(MessageHandler);
+        self.LastPong = tick();
 
         while wait(10) do
             if self.__OBJECT_ACTIVE then
                 self.Websocket:Send(FormatPacket({ Opcode = "PING", Data = {} }));
+                if tick() - self.LastPong > 20 then
+                    warn("Server timeout");
+                    self.Websocket:Close();
+                end;
             end;
         end;
     end;
@@ -55,6 +64,7 @@ local ws = {} do
     -- Connects to the url
     function ws:new(url) 
         local object = {};
+
         setmetatable(object, self);
         self.__index = self
 
@@ -66,8 +76,9 @@ local ws = {} do
         self.OnMessageSignal = Instance.new("BindableEvent");
         self.OnMessage = self.OnMessageSignal.Event;
         self.__OBJECT_ACTIVE = true;
-
         wrap(WebsocketHandler)(self);
+
+        repeat wait() until self.LastPong;
         return object;
     end;
 
@@ -89,13 +100,13 @@ local ws = {} do
     end;
 end;
 
-local http = ws:new("ws://localhost:8080");
+local http = ws:new("ws://localhost:8088");
 http.OnMessage:Connect(function(...)
     print("msg", ...);
 end);
 
 local response = http:request({
-    Url = "ws://localhost:8080/api/info"
+    Url = "ws://localhost:8088/api/info"
 });
 
 print(response)

@@ -1,6 +1,7 @@
 const http = require("./http");
 
 http.on("/api/info", (request, socket) => {
+    console.log("/api/info")
     //console.log(request);
     request.send("hello");
 });

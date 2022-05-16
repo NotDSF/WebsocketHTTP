@@ -38,7 +38,7 @@ wss.on("connection", (socket) => {
                 }
                 
                 Request.params = UrlData.searchParams;
-                Request.send = socket.send;
+                Request.send = (data) => socket.send(data);
                 http.emit(UrlData.pathname, Request, socket);
                 
                 break;
@@ -50,6 +50,7 @@ wss.on("connection", (socket) => {
 
     socket.on("close", (code, reason) => http.emit("close", code, reason));
 
+    // check every 1 second on clients
     setInterval(() => {
         wss.clients.forEach(socket => {
             if (socket.LastPing && (Date.now() - socket.LastPing) / 1000 > 20) {
@@ -57,6 +58,11 @@ wss.on("connection", (socket) => {
             }
         });
     }, 1000);
+
+    // pong every 10 seconds
+    setInterval(() => {
+        wss.clients.forEach(socket => socket.send("PONG"));
+    }, 10000)
 });
 
 wss.on("listening", () => http.emit("ready"));
