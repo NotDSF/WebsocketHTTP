@@ -91,7 +91,7 @@ local ws = {} do
             Data = request
         }));
 
-        return self.Websocket.OnMessage:Wait();
+        return self.OnMessageSignal:Wait();
     end;
 
     function ws:close() 
