@@ -38,9 +38,8 @@ wss.on("connection", (socket) => {
                 }
                 
                 Request.params = UrlData.searchParams;
-                Request.send = (data) => socket.send(data);
+                Request.send = (data) => socket.send(Data.Id ? `|__${Data.Id}__|${data}` : data);
                 http.emit(UrlData.pathname, Request, socket);
-                
                 break;
             case "PING":
                 socket.LastPing = Date.now();

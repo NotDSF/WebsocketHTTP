@@ -24,6 +24,16 @@ local ws = {} do
                 self.LastPong = tick();
                 return; -- dont send message event
             end;
+
+            local IsResponse = string.match(msg, "|__(%d+)__|");
+            if IsResponse then
+                local Event = self.Requests[IsResponse + 0];
+                assert(Event, "Internal Error: no event receiver");
+
+                Event:Fire(msg:gsub("|__(%d+)__|", ""));
+                return Event:Destroy();
+            end;
+
             return self.OnMessageSignal:Fire(msg);
         end;
 
@@ -75,6 +85,7 @@ local ws = {} do
         self.Url = url;
         self.OnMessageSignal = Instance.new("BindableEvent");
         self.OnMessage = self.OnMessageSignal.Event;
+        self.Requests = {};
         self.__OBJECT_ACTIVE = true;
         wrap(WebsocketHandler)(self);
 
@@ -86,12 +97,17 @@ local ws = {} do
     function ws:request(request) 
         while not self.__OBJECT_ACTIVE do wait() end;
 
+        local RequestId = math.random(1, 99999999); -- doesn't need to be 'secure'
+        local InternalEvent = Instance.new("BindableEvent");
+
+        self.Requests[RequestId] = InternalEvent;
         self.Websocket:Send(FormatPacket({
             Opcode = "REQUEST",
-            Data = request
+            Data = request,
+            Id = RequestId
         }));
 
-        return self.OnMessageSignal:Wait();
+        return InternalEvent.Event:Wait();
     end;
 
     function ws:close() 
