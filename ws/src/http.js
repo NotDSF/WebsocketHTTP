@@ -59,9 +59,7 @@ wss.on("connection", (socket) => {
 setInterval(() => {
     wss.clients.forEach(socket => {
         if (socket.LastPing && (Date.now() - socket.LastPing) / 1000 > 20) {
-            if (!socket.CLOSED || !socket.CLOSING) {
-                socket.close();
-            }
+            socket.close();
         }
     });
 }, 1000);
