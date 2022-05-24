@@ -50,7 +50,7 @@ wss.on("connection", (socket) => {
     socket.on("close", (code, reason) => http.emit("close", code, reason));
 });
 
-    // check every 1 second on clients
+// check every 1 second on clients
 setInterval(() => {
     wss.clients.forEach(socket => {
         if (socket.LastPing && (Date.now() - socket.LastPing) / 1000 > 20) {
@@ -59,9 +59,13 @@ setInterval(() => {
     });
 }, 1000);
 
-    // pong every 10 seconds
+// pong every 10 seconds
 setInterval(() => {
-    wss.clients.forEach(socket => socket.send("PONG"));
+    wss.clients.forEach(socket => socket.send("PONG", function(err) {
+        if (err) {
+            console.log(err);
+        }
+    }));
 }, 10000)
 
 wss.on("listening", () => http.emit("ready"));
