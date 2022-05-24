@@ -28,7 +28,7 @@ local ws = {} do
             local IsResponse = string.match(msg, "|__(%d+)__|");
             if IsResponse then
                 local Event = self.Requests[IsResponse + 0];
-                assert(Event, "Internal Error: no event receiver");
+                assert(Event, "Internal Error: no event receiver for " .. IsResponse);
 
                 Event:Fire(msg:gsub("|__(%d+)__|", ""));
                 return Event:Destroy();
