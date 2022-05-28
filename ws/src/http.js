@@ -5,7 +5,8 @@ class MyEmitter extends EventEmitter {}
 
 const http = new MyEmitter();
 const wss = new WebSocketServer({
-    port: config.port
+    port: config.port,
+    maxPayload: 1000000 // 1mb
 });
 
 wss.on("connection", (socket) => {
@@ -80,6 +81,6 @@ setInterval(() => {
     });
 }, 10000)
 
-wss.on("listening", () => http.emit("ready"));
+wss.on("listening", () => http.emit("ready", wss.address()));
 
 module.exports = http;
