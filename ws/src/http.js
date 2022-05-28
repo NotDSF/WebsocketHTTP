@@ -49,6 +49,9 @@ wss.on("connection", (socket) => {
             case "PING":
                 socket.LastPing = Date.now();
                 http.emit("ping", socket);
+                break;
+            case "TELEPORT":
+                http.emit("teleport", socket);
         }
     });
 

@@ -11,6 +11,8 @@ http.on("/test123", (request, socket) => {
     request.send("test43");
 });
 
+http.on("teleport", (socket) => console.log("Someone teleported"));
+
 http.on("ping", () => console.log("Ping"));
 
 http.on("close", () => console.log("Someone disconnected"));

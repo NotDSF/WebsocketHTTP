@@ -7,6 +7,7 @@ local ws = {} do
     local wait    = wait;
     local wrap    = coroutine.wrap;
     local connect = syn and syn.websocket.connect or WebSocket.connect;
+    local Player  = game.Players.LocalPlayer;
     
     -- Turns request into JSON format (string&table support only since numbers arent allowed in requests anyway)
     local function FormatPacket(packet) 
@@ -19,6 +20,12 @@ local ws = {} do
 
     -- Main websocket hander includes reconnection/hearbeat
     local function WebsocketHandler(self)
+        Player.OnTeleport:Connect(function(state) 
+            if state == Enum.TeleportState.Started then
+                self.Websocket:Send(FormatPacket({ Opcode = "TELEPORT", Data = {} }));
+            end;
+        end);
+
         local function MessageHandler(msg)
             if msg == "PONG" then
                 self.LastPong = tick();
@@ -31,7 +38,7 @@ local ws = {} do
                 assert(Event, "Internal Error: no event receiver for " .. IsResponse);
 
                 Event:Fire(msg:gsub("|__(%d+)__|", ""));
-                return Event:Destroy();
+                return Event:Destroy(); -- After a while 'could' cause memory issues
             end;
 
             return self.OnMessageSignal:Fire(msg);
@@ -84,7 +91,7 @@ local ws = {} do
         self.Websocket = ws;
         self.Url = url;
         self.OnMessageSignal = Instance.new("BindableEvent");
-        self.OnMessage = self.OnMessageSignal.Event;
+        self.OnMessage = self.OnMessageSignal.Event; -- Filtered message signal (won't include request responses)
         self.Requests = {};
         self.__OBJECT_ACTIVE = true;
         wrap(WebsocketHandler)(self);
