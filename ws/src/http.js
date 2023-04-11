@@ -6,6 +6,7 @@ class MyEmitter extends EventEmitter {}
 const http = new MyEmitter();
 const wss = new WebSocketServer({
     port: config.port,
+    perMessageDeflate: false,
     maxPayload: 1000000 // 1mb
 });
 
@@ -21,8 +22,6 @@ wss.on("connection", (socket) => {
             http.emit("invalid", socket);
             return socket.close();
         }
-
-       // console.log(Data);
 
         if (!Data.Opcode || !Data.Data) return socket.close();
 
@@ -53,6 +52,10 @@ wss.on("connection", (socket) => {
                 break;
             case "TELEPORT":
                 http.emit("teleport", socket);
+                break;
+            default:
+                socket.close();
+                break;
         }
     });
 
